@@ -46,8 +46,8 @@ public class Main {
 
     // Creating document and corpus
     Document doc =
-    newDocument("file:/"+root+"input/corpus_of_protocols/DNAProtocols_txt/E28.txt", "UTF-8");
-    //newDocument("file:/" + root + "input/test.txt", "UTF-8");
+    //newDocument("file:/"+root+"input/corpus_of_protocols/Rare allele enrichment and detection by allele-specific PCR, competitive probe blocking and melting analysis.pdf", "UTF-8");
+    newDocument("file:/" + root + "input/test.txt", "UTF-8");
     // newDocument("file:/"+root+"input/Practical_DGS_protocfor large-scale genome structural study.pdf","UTF-8");
     // newDocument("file:/"+root+"input/Protocol Exchange_4.pdf","UTF-8");
     Corpus corpus = Factory.newCorpus("Corpus");
@@ -66,7 +66,7 @@ public class Main {
     AnnotationSet annot = doc.getAnnotations();
 
     // processing lookUp annotations (large gazetteer annotations)
-    processLookUpAnnots(annot, doc);
+    //processLookUpAnnots(annot, doc);
 
     // processing annotations (printing)
     processAnnots(annot);
@@ -125,6 +125,8 @@ public class Main {
     controller = loadLKBG("file:/" + root + "gazetteers/large/", controller);
     // JAPE Rules
     controller = loadRules(root + "rules/", controller);
+    // NCBI tagger
+    controller = loadPR("NCBITagger.Main", controller);
   }
 
   // method to load a PR from its name
@@ -184,79 +186,6 @@ public class Main {
       controller.add(jpt);
     }
     return controller;
-  }
-
-  // method to process lookUp annotations (large gazetteer annotations)
-  private static void processLookUpAnnots(AnnotationSet annot, Document doc)
-      throws InvalidOffsetException, InterruptedException {
-    // getting organism annotations (NCBITaxon terms)
-    AnnotationSet organismAnnots = doc.getAnnotations("Organism");
-    // saving tokens into a hashtable for efficient access
-    Hashtable<Long, Annotation> table = saveTokens(annot.get("Token"));
-    // filling features for each term comparing organism terms with saved tokens
-    fillFeatures(organismAnnots, table);
-  }
-
-  // method to save tokens into a hashtable
-  public static Hashtable<Long, Annotation> saveTokens(AnnotationSet annot) {
-    Hashtable<Long, Annotation> table = new Hashtable<Long, Annotation>();
-    Iterator<Annotation> it = annot.iterator();
-    while (it.hasNext()) {
-      Annotation a = it.next();
-      // for a quick access, key is annotation start
-      table.put(a.getStartNode().getOffset(), a);
-    }
-    return table;
-  }
-
-  // method to fill features of a term with annotation in organismAnnots and string in table
-  private static void fillFeatures(AnnotationSet organismAnnots, Hashtable<Long, Annotation> table)
-      throws InterruptedException {
-    // connecting to NCBITaxon DB
-    MongoClient mongoClient = new MongoClient();
-    // getting organism collection
-    MongoCollection<org.bson.Document> collection = connect(mongoClient);
-    // counting annotations added to thread
-    int i = 0;
-    // counting processed annotations
-    int j = 0;
-    Thread t = null;
-    // list of threads
-    List<Thread> threads = new ArrayList<Thread>();
-    Iterator<Annotation> it = organismAnnots.iterator();
-    while (j < organismAnnots.size()) {
-      List<Annotation> l = new ArrayList<Annotation>();
-      i = 0;
-      // 5 annotations per thread
-      while ((i < 5) && (it.hasNext())) {
-        Annotation s = (Annotation) it.next();
-        l.add(s);
-        i++;
-        j++;
-      }
-      // annotation processing via thread
-      t = new Thread(new MyThread(l, table, collection));
-      t.start();
-      threads.add(t);
-    }
-    // all threads exiting before disconnecting from DB
-    Thread[] ts = threads.toArray(new Thread[threads.size()]);
-    for (i = 0; i < ts.length; i++) {
-      ts[i].join();
-    }
-    // disconnecting from MongoDB
-    mongoClient.close();
-    System.out.println("Disconnected from NCBITaxon DB");
-  }
-
-  // method to connect to NCBITaxon DB and get organism collection
-  private static MongoCollection<org.bson.Document> connect(MongoClient mongoClient) {
-    MongoDatabase db = mongoClient.getDatabase("ncbitaxon");
-    System.out.println("Connected to NCBITaxon DB");
-    mongoClient.setWriteConcern(WriteConcern.JOURNALED);
-    System.out.println("Connected to organism collection");
-    // getting collection
-    return db.getCollection("organism");
   }
 
   // method to process annotations (printing them)
