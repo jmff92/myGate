@@ -38,20 +38,24 @@ import java.util.Set;
 public class Main {
 
   // filepath
-  static String root = "C:/Users/jfigueredo/Desktop/mygate/";
+//  static String root = "C:/Users/jfigueredo/Desktop/mygate/";
+  static String root = System.getProperty("user.dir")+"/";
 
   public static void main(String[] args) throws Exception {
 
     startGate();
 
     // Creating document and corpus
-    Document doc =
-    //newDocument("file:/"+root+"input/corpus_of_protocols/Rare allele enrichment and detection by allele-specific PCR, competitive probe blocking and melting analysis.pdf", "UTF-8");
-    newDocument("file:/" + root + "input/test.txt", "UTF-8");
-    // newDocument("file:/"+root+"input/Practical_DGS_protocfor large-scale genome structural study.pdf","UTF-8");
+//    Document doc =
+    // newDocument("file:/"+root+"input/corpus_of_protocols/Rare allele
+    // enrichment and detection by allele-specific PCR, competitive probe
+    // blocking and melting analysis.pdf", "UTF-8");
+//    newDocument("file:/" + root + "input/test.txt", "UTF-8");
+    // newDocument("file:/"+root+"input/Practical_DGS_protocfor large-scale
+    // genome structural study.pdf","UTF-8");
     // newDocument("file:/"+root+"input/Protocol Exchange_4.pdf","UTF-8");
     Corpus corpus = Factory.newCorpus("Corpus");
-    corpus.add(doc);
+//    corpus.add(doc);
 
     // Creating pipeline
     SerialAnalyserController controller = (SerialAnalyserController) Factory
@@ -63,16 +67,13 @@ public class Main {
     controller.execute();
 
     // getting annotations
-    AnnotationSet annot = doc.getAnnotations();
-
-    // processing lookUp annotations (large gazetteer annotations)
-    //processLookUpAnnots(annot, doc);
+//    AnnotationSet annot = doc.getAnnotations();
 
     // processing annotations (printing)
-    processAnnots(annot);
+//    processAnnots(annot);
 
     // creating xml file with annotations
-    createXML(doc);
+//    createXML(doc);
   }
 
   // method to start GATE and show its main window
@@ -106,8 +107,13 @@ public class Main {
     File pluginsDir = Gate.getPluginsHome();
     // load the ANNIE plugin
     File aPluginDir = new File(pluginsDir, "ANNIE");
-    // load the plugin
+    // loading plugins
     Gate.getCreoleRegister().registerDirectories(aPluginDir.toURI().toURL());
+    File ncbiPluginDir = new File(pluginsDir, "NCBITagger");
+    Gate.getCreoleRegister().registerDirectories(ncbiPluginDir.toURI().toURL());    
+    File chebiPluginDir = new File(pluginsDir, "CHEBITagger");
+    Gate.getCreoleRegister().registerDirectories(chebiPluginDir.toURI().toURL());
+    
     // Plugins: https://gate.ac.uk/gate/doc/plugins.html
     // Document PR
     controller = loadPR("gate.creole.annotdelete.AnnotationDeletePR", controller);
@@ -118,15 +124,19 @@ public class Main {
     // POS Tagger
     controller = loadPR("gate.creole.POSTagger", controller);
     // Morphological analyser
-    controller = loadPR("gate.creole.morph.Morph", controller);
+//    controller = loadPR("gate.creole.morph.Morph", controller);
     // Flexible gazetteer
+    System.out.println("file:/" + root + "gazetteers/simple/simple.def");
     controller = loadFlexGaz("$", "file:/" + root + "gazetteers/simple/simple.def", controller);
-    // Large KB Gazetteer (NCBITaxon terms)
-    controller = loadLKBG("file:/" + root + "gazetteers/large/", controller);
+    // Large KB Gazetteer (NCBITaxon and CHEBI terms)
+    controller = loadLKBG("file:/" + root + "gazetteers/large/NCBITaxon", controller, "Organism");
+    controller = loadLKBG("file:/" + root + "gazetteers/large/CHEBI", controller, "Reagent");
     // JAPE Rules
     controller = loadRules(root + "rules/", controller);
     // NCBI tagger
     controller = loadPR("NCBITagger.Main", controller);
+    // CHEBI tagger    
+    controller = loadPR("CHEBITagger.Main", controller);
   }
 
   // method to load a PR from its name
@@ -159,12 +169,12 @@ public class Main {
   }
 
   // method to load a large KB gazetteer
-  private static SerialAnalyserController loadLKBG(String url, SerialAnalyserController controller)
+  private static SerialAnalyserController loadLKBG(String url, SerialAnalyserController controller, String setname)
       throws ResourceInstantiationException, MalformedURLException {
     FeatureMap lkgFeatures = Factory.newFeatureMap();
     lkgFeatures.put("dictionaryPath", new URL(url));
     // setting annotation set name
-    lkgFeatures.put("annotationSetName", "Organism");
+    lkgFeatures.put("annotationSetName", setname);
     ProcessingResource lkg = (ProcessingResource) Factory.createResource("com.ontotext.kim.gate.KimGazetteer",
         lkgFeatures);
     controller.add(lkg);
@@ -212,7 +222,7 @@ public class Main {
 
   // method to create XML with annotations from input
   public static void createXML(Document doc) throws IOException {
-    String output = root + "/output/doc.xml";
+    String output = root + "output/doc.xml";
     FileWriter writer = new FileWriter(output, false);
     String xml = doc.toXml();
     writer.write(xml);

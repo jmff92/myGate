@@ -6,5 +6,6 @@
 	<classpathentry kind="lib" path="C:/Users/jfigueredo/Downloads/bson-3.0.2.jar"/>
 	<classpathentry kind="lib" path="C:/Users/jfigueredo/Downloads/mongo-java-driver-3.0.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/jfigueredo/Desktop/NCBITagger.jar"/>
+	<classpathentry kind="lib" path="C:/Users/jfigueredo/Desktop/CHEBITagger.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
